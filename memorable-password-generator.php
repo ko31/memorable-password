@@ -43,6 +43,7 @@ class memorable_password_generator {
         );
         $this->version = $data['ver'];
         $this->langs   = $data['langs'];
+        $this->plugin_name = 'memorable-password-generator';
     }
 
     public function register()
@@ -58,7 +59,130 @@ class memorable_password_generator {
             dirname( plugin_basename( __FILE__ ) ) . $this->langs
         );
 
+        add_action( 'admin_menu', array( $this, 'admin_menu' ) );
+        add_action( 'admin_init', array( $this, 'admin_init' ) );
+        add_action( 'admin_notices', array( $this, 'admin_notices' ) );
         add_filter( 'random_password', array( $this, 'random_password' ), 10, 1 );
+    }
+
+    public function admin_menu()
+    {
+        add_options_page(
+            __( 'Memorable Password Generator', 'memorable-password-generator' ),
+            __( 'Memorable Password Generator', 'memorable-password-generator' ),
+            'manage_options',
+            'memorable-password-generator',
+            array( $this, 'options_page' )
+        );
+    }
+
+    public function admin_init()
+    {
+        if ( isset($_POST['memorable-password-generator-nonce']) && $_POST['memorable-password-generator-nonce'] ) {
+            if ( check_admin_referer( 'memorable-password-generator', 'memorable-password-generator-nonce' ) ) {
+                global $wpdb;
+                $e = new WP_Error();
+                $words = isset( $_POST['words'] ) ? $_POST['words'] : '' ;
+                $uppercase = isset( $_POST['uppercase'] ) ? $_POST['uppercase'] : '' ;
+                $delimiter = isset( $_POST['delimiter'] ) ? $_POST['delimiter'] : '' ;
+                if ( $words ) {
+                    $options = get_option( $this->plugin_name );
+                    $options['words'] = $words;
+                    $options['uppercase'] = $uppercase;
+                    $options['delimiter'] = $delimiter;
+                    update_option( $this->plugin_name, $options );
+                    set_transient( 'memorable-password-generator-updated', true, 5 );
+                } else {
+                    $e->add( 'error', esc_html__( 'Please select at least one kind of words', 'memorable-password-generator' ) );
+                    set_transient( 'memorable-password-generator-errors', $e->get_error_messages(), 5 );
+                }
+
+                wp_redirect( 'options-general.php?page=memorable-password-generator' );
+            }
+        }
+    }
+
+    public function admin_notices()
+    {
+?>
+        <?php if ( $messages = get_transient( 'memorable-password-generator-errors' ) ): ?>
+            <div class="error">
+            <ul>
+            <?php foreach ( $messages as $message ): ?>
+                <li><?php echo esc_html( $message );?></li>
+            <?php endforeach; ?>
+            </ul>
+            </div>
+        <?php endif; ?>
+        <?php if ( $messages = get_transient( 'memorable-password-generator-updated' ) ): ?>
+            <div class="updated">
+            <ul>
+                <li><?php esc_html_e( 'Password has been updated.', 'memorable-password-generator' );?></li>
+            </ul>
+            </div>
+        <?php endif; ?>
+<?php
+    }
+
+    public function options_page()
+    {
+        if ( isset($_POST['memorable-password-generator-nonce']) && $_POST['memorable-password-generator-nonce'] ) {
+            $words = $_POST['words'];
+            $uppercase = $_POST['uppercase'];
+            $delimiter = $_POST['delimiter'];
+        } else {
+            $options = get_option( $this->plugin_name );
+            $words = isset( $options['words'] ) ? $options['words'] : '';
+            $uppercase = isset( $options['uppercase'] ) ? $options['uppercase'] : '';
+            $delimiter = isset( $options['delimiter'] ) ? $options['delimiter'] : '';
+        }
+?>
+<div id="memorable-password-generator" class="wrap">
+<h2>Memorable Password Generator</h2>
+
+<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
+<?php wp_nonce_field( 'memorable-password-generator', 'memorable-password-generator-nonce' ); ?>
+
+<table class="form-table">
+<tbody>
+<tr>
+<th scope="row"><label for="words"><?php esc_html_e( 'Kind of words', 'memorable-password-generator' );?></label></th>
+<td>
+<fieldset>
+<legend class="screen-reader-text"><span><?php esc_html_e( 'Kind of words', 'memorable-password-generator' );?></span></legend>
+<label for="words_animal"><input name="words[]" type="checkbox" id="words_animal" value="animal" <?php if ( in_array( 'animal' , $words ) ) { echo "checked";} ?>/><?php esc_html_e( 'Animal', 'memorable-password-generator' );?></label>&nbsp;
+<label for="words_country"><input name="words[]" type="checkbox" id="words_country" value="country" <?php if ( in_array( 'country' , $words ) ) { echo "checked";} ?>/><?php esc_html_e( 'country', 'memorable-password-generator' );?></label>&nbsp;
+<label for="words_food"><input name="words[]" type="checkbox" id="words_food" value="food" <?php if ( in_array( 'food' , $words ) ) { echo "checked";} ?>/><?php esc_html_e( 'food', 'memorable-password-generator' );?></label>&nbsp;
+</fieldset>
+</td>
+</tr>
+<tr>
+<th scope="row"><label for="uppercase"><?php esc_html_e( 'Uppercase', 'memorable-password-generator' );?></label></th>
+<td>
+<fieldset>
+<legend class="screen-reader-text"><span><?php esc_html_e( 'Uppercase', 'memorable-password-generator' );?></span></legend>
+<label for="include_uppercase"><input name="uppercase" type="checkbox" id="include_uppercase" value="1" <?php if ( $uppercase ) { echo "checked";} ?>/><?php esc_html_e( 'Include Uppercase characters', 'memorable-password-generator' );?></label>&nbsp;
+</fieldset>
+</td>
+</tr>
+<tr>
+<th scope="row"><label for="delimiter"><?php esc_html_e( 'Delimiter', 'memorable-password-generator' );?></label></th>
+<td>
+<fieldset>
+<legend class="screen-reader-text"><span><?php esc_html_e( 'Delimiter', 'memorable-password-generator' );?></span></legend>
+<label for="delimiter_char"><input name="delimiter" type="checkbox" id="delimiter_char" value="1" <?php if ( $delimiter ) { echo "checked";} ?>/><?php esc_html_e( 'Use symbols for delimiter', 'memorable-password-generator' );?></label>&nbsp;
+</fieldset>
+</td>
+</tr>
+</tbody>
+</table>
+
+<p class="submit">
+<input type="submit" name="submit" id="submit" class="button button-primary" value="<?php esc_html_e( 'Update', 'memorable-password-generator' );?>">
+</p>
+</form>
+</div><!-- #memorable-password-generator -->
+<?php
     }
 
     public function random_password( $password )
@@ -69,9 +193,9 @@ class memorable_password_generator {
         $foods = $this->get_food_words();
 
         $words = array();
-        $words[] = $this->capitalise_one_letter( $animals[mt_rand(0, count($animals))] );
-        $words[] = $this->capitalise_one_letter( $countries[mt_rand(0, count($countries))] );
-        $words[] = $this->capitalise_one_letter( $foods[mt_rand(0, count($foods))] );
+        $words[] = $this->uppercase_one_letter( $animals[mt_rand(0, count($animals))] );
+        $words[] = $this->uppercase_one_letter( $countries[mt_rand(0, count($countries))] );
+        $words[] = $this->uppercase_one_letter( $foods[mt_rand(0, count($foods))] );
         shuffle( $words );
 
         $password = implode( substr($chars, wp_rand(0, strlen($chars) - 1), 1), $words );
@@ -79,7 +203,7 @@ class memorable_password_generator {
         return $password;
     }
 
-    protected function capitalise_one_letter( $word )
+    protected function uppercase_one_letter( $word )
     {
         $chars = preg_split( '//', $word, -1, PREG_SPLIT_NO_EMPTY );
         $position = mt_rand( 0, count( $chars ) - 1 );
