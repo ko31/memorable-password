@@ -1,13 +1,13 @@
 <?php
 /**
- * Plugin Name: Memorable Password Generator
- * Plugin URI:  https://github.com/ko31/memorable-password-generator
+ * Plugin Name: Memorable Password
+ * Plugin URI:  https://github.com/ko31/memorable-password
  * Description: This plugin generates memorable, strong passwords.
  * Version:     1.0.0
  * Author:      Ko Takagi
  * Author URI:  http://go-sign.info/
  * License:     GPLv2
- * Text Domain: memorable-password-generator
+ * Text Domain: memorable-password
  * Domain Path: /languages
  */
 
@@ -27,10 +27,10 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-$memorablePasswordGenerator = new memorable_password_generator();
-$memorablePasswordGenerator->register();
+$memorablePassword = new memorable_password();
+$memorablePassword->register();
 
-class memorable_password_generator {
+class memorable_password {
 
     private $version = '';
     private $langs   = '';
@@ -43,7 +43,7 @@ class memorable_password_generator {
         );
         $this->version = $data['ver'];
         $this->langs   = $data['langs'];
-        $this->plugin_name = 'memorable-password-generator';
+        $this->plugin_name = 'memorable-password';
     }
 
     public function register()
@@ -54,7 +54,7 @@ class memorable_password_generator {
     public function plugins_loaded()
     {
         load_plugin_textdomain(
-            'memorable-password-generator',
+            'memorable-password',
             false,
             dirname( plugin_basename( __FILE__ ) ) . $this->langs
         );
@@ -68,18 +68,18 @@ class memorable_password_generator {
     public function admin_menu()
     {
         add_options_page(
-            __( 'Memorable Password Generator', 'memorable-password-generator' ),
-            __( 'Memorable Password Generator', 'memorable-password-generator' ),
+            __( 'Memorable Password', 'memorable-password' ),
+            __( 'Memorable Password', 'memorable-password' ),
             'manage_options',
-            'memorable-password-generator',
+            'memorable-password',
             array( $this, 'options_page' )
         );
     }
 
     public function admin_init()
     {
-        if ( isset($_POST['memorable-password-generator-nonce']) && $_POST['memorable-password-generator-nonce'] ) {
-            if ( check_admin_referer( 'memorable-password-generator', 'memorable-password-generator-nonce' ) ) {
+        if ( isset($_POST['memorable-password-nonce']) && $_POST['memorable-password-nonce'] ) {
+            if ( check_admin_referer( 'memorable-password', 'memorable-password-nonce' ) ) {
                 global $wpdb;
                 $e = new WP_Error();
                 $words = isset( $_POST['words'] ) ? $_POST['words'] : '' ;
@@ -91,13 +91,13 @@ class memorable_password_generator {
                     $options['uppercase'] = $uppercase;
                     $options['delimiter'] = $delimiter;
                     update_option( $this->plugin_name, $options );
-                    set_transient( 'memorable-password-generator-updated', true, 5 );
+                    set_transient( 'memorable-password-updated', true, 5 );
                 } else {
-                    $e->add( 'error', esc_html__( 'Please select at least one kind of words', 'memorable-password-generator' ) );
-                    set_transient( 'memorable-password-generator-errors', $e->get_error_messages(), 5 );
+                    $e->add( 'error', esc_html__( 'Please select at least one kind of words', 'memorable-password' ) );
+                    set_transient( 'memorable-password-errors', $e->get_error_messages(), 5 );
                 }
 
-                wp_redirect( 'options-general.php?page=memorable-password-generator' );
+                wp_redirect( 'options-general.php?page=memorable-password' );
             }
         }
     }
@@ -105,7 +105,7 @@ class memorable_password_generator {
     public function admin_notices()
     {
 ?>
-        <?php if ( $messages = get_transient( 'memorable-password-generator-errors' ) ): ?>
+        <?php if ( $messages = get_transient( 'memorable-password-errors' ) ): ?>
             <div class="error">
             <ul>
             <?php foreach ( $messages as $message ): ?>
@@ -114,10 +114,10 @@ class memorable_password_generator {
             </ul>
             </div>
         <?php endif; ?>
-        <?php if ( $messages = get_transient( 'memorable-password-generator-updated' ) ): ?>
+        <?php if ( $messages = get_transient( 'memorable-password-updated' ) ): ?>
             <div class="updated">
             <ul>
-                <li><?php esc_html_e( 'Password has been updated.', 'memorable-password-generator' );?></li>
+                <li><?php esc_html_e( 'Password has been updated.', 'memorable-password' );?></li>
             </ul>
             </div>
         <?php endif; ?>
@@ -126,51 +126,51 @@ class memorable_password_generator {
 
     public function options_page()
     {
-        if ( isset($_POST['memorable-password-generator-nonce']) && $_POST['memorable-password-generator-nonce'] ) {
+        if ( isset($_POST['memorable-password-nonce']) && $_POST['memorable-password-nonce'] ) {
             $words = $_POST['words'];
             $uppercase = $_POST['uppercase'];
             $delimiter = $_POST['delimiter'];
         } else {
             $options = get_option( $this->plugin_name );
-            $words = isset( $options['words'] ) ? $options['words'] : '';
+            $words = isset( $options['words'] ) ? $options['words'] : array();
             $uppercase = isset( $options['uppercase'] ) ? $options['uppercase'] : '';
             $delimiter = isset( $options['delimiter'] ) ? $options['delimiter'] : '';
         }
 ?>
-<div id="memorable-password-generator" class="wrap">
-<h2>Memorable Password Generator</h2>
+<div id="memorable-password" class="wrap">
+<h2>Memorable Password</h2>
 
 <form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
-<?php wp_nonce_field( 'memorable-password-generator', 'memorable-password-generator-nonce' ); ?>
+<?php wp_nonce_field( 'memorable-password', 'memorable-password-nonce' ); ?>
 
 <table class="form-table">
 <tbody>
 <tr>
-<th scope="row"><label for="words"><?php esc_html_e( 'Kind of words', 'memorable-password-generator' );?></label></th>
+<th scope="row"><label for="words"><?php esc_html_e( 'Kind of words', 'memorable-password' );?></label></th>
 <td>
 <fieldset>
-<legend class="screen-reader-text"><span><?php esc_html_e( 'Kind of words', 'memorable-password-generator' );?></span></legend>
-<label for="words_animal"><input name="words[]" type="checkbox" id="words_animal" value="animal" <?php if ( in_array( 'animal' , $words ) ) { echo "checked";} ?>/><?php esc_html_e( 'Animal', 'memorable-password-generator' );?></label>&nbsp;
-<label for="words_country"><input name="words[]" type="checkbox" id="words_country" value="country" <?php if ( in_array( 'country' , $words ) ) { echo "checked";} ?>/><?php esc_html_e( 'country', 'memorable-password-generator' );?></label>&nbsp;
-<label for="words_food"><input name="words[]" type="checkbox" id="words_food" value="food" <?php if ( in_array( 'food' , $words ) ) { echo "checked";} ?>/><?php esc_html_e( 'food', 'memorable-password-generator' );?></label>&nbsp;
+<legend class="screen-reader-text"><span><?php esc_html_e( 'Kind of words', 'memorable-password' );?></span></legend>
+<label for="words_animal"><input name="words[]" type="checkbox" id="words_animal" value="animal" <?php if ( in_array( 'animal' , $words ) ) { echo "checked";} ?>/><?php esc_html_e( 'Animal', 'memorable-password' );?></label>&nbsp;
+<label for="words_country"><input name="words[]" type="checkbox" id="words_country" value="country" <?php if ( in_array( 'country' , $words ) ) { echo "checked";} ?>/><?php esc_html_e( 'country', 'memorable-password' );?></label>&nbsp;
+<label for="words_food"><input name="words[]" type="checkbox" id="words_food" value="food" <?php if ( in_array( 'food' , $words ) ) { echo "checked";} ?>/><?php esc_html_e( 'food', 'memorable-password' );?></label>&nbsp;
 </fieldset>
 </td>
 </tr>
 <tr>
-<th scope="row"><label for="uppercase"><?php esc_html_e( 'Uppercase', 'memorable-password-generator' );?></label></th>
+<th scope="row"><label for="uppercase"><?php esc_html_e( 'Uppercase', 'memorable-password' );?></label></th>
 <td>
 <fieldset>
-<legend class="screen-reader-text"><span><?php esc_html_e( 'Uppercase', 'memorable-password-generator' );?></span></legend>
-<label for="include_uppercase"><input name="uppercase" type="checkbox" id="include_uppercase" value="1" <?php if ( $uppercase ) { echo "checked";} ?>/><?php esc_html_e( 'Include Uppercase characters', 'memorable-password-generator' );?></label>&nbsp;
+<legend class="screen-reader-text"><span><?php esc_html_e( 'Uppercase', 'memorable-password' );?></span></legend>
+<label for="include_uppercase"><input name="uppercase" type="checkbox" id="include_uppercase" value="1" <?php if ( $uppercase ) { echo "checked";} ?>/><?php esc_html_e( 'Include Uppercase characters', 'memorable-password' );?></label>&nbsp;
 </fieldset>
 </td>
 </tr>
 <tr>
-<th scope="row"><label for="delimiter"><?php esc_html_e( 'Delimiter', 'memorable-password-generator' );?></label></th>
+<th scope="row"><label for="delimiter"><?php esc_html_e( 'Delimiter', 'memorable-password' );?></label></th>
 <td>
 <fieldset>
-<legend class="screen-reader-text"><span><?php esc_html_e( 'Delimiter', 'memorable-password-generator' );?></span></legend>
-<label for="delimiter_char"><input name="delimiter" type="checkbox" id="delimiter_char" value="1" <?php if ( $delimiter ) { echo "checked";} ?>/><?php esc_html_e( 'Use symbols for delimiter', 'memorable-password-generator' );?></label>&nbsp;
+<legend class="screen-reader-text"><span><?php esc_html_e( 'Delimiter', 'memorable-password' );?></span></legend>
+<label for="delimiter_char"><input name="delimiter" type="checkbox" id="delimiter_char" value="1" <?php if ( $delimiter ) { echo "checked";} ?>/><?php esc_html_e( 'Use symbols for delimiter', 'memorable-password' );?></label>&nbsp;
 </fieldset>
 </td>
 </tr>
@@ -178,10 +178,10 @@ class memorable_password_generator {
 </table>
 
 <p class="submit">
-<input type="submit" name="submit" id="submit" class="button button-primary" value="<?php esc_html_e( 'Update', 'memorable-password-generator' );?>">
+<input type="submit" name="submit" id="submit" class="button button-primary" value="<?php esc_html_e( 'Update', 'memorable-password' );?>">
 </p>
 </form>
-</div><!-- #memorable-password-generator -->
+</div><!-- #memorable-password -->
 <?php
     }
 
@@ -227,6 +227,6 @@ class memorable_password_generator {
         return array('almonds', 'anchovies', 'apple', 'applecider', 'artichoke', 'arugula', 'asparagus', 'avocado', 'basil', 'beets', 'belgianendive', 'bellpepper', 'blackpepper', 'blackraspberries', 'blackrice', 'blacktea', 'blackberries', 'blueberries', 'bokchoy', 'broadbean', 'broccoli', 'brownrice', 'brusselsprouts', 'cabbage', 'cactuspear', 'cantaloupe', 'capers', 'cardamom', 'carrotjuice', 'carrots', 'cashews', 'cauliflower', 'celery', 'chard', 'cherries', 'chestnut', 'chickendarkmeat', 'chickpeas', 'chicory', 'chinesechives', 'chocolate', 'cilantro', 'cinnamon', 'clementines', 'cloves', 'cocoapowder', 'coconut', 'coffee', 'collardgreens', 'cranberries', 'currants', 'cuttlefish', 'edamame', 'eggplant', 'escarole', 'favabeans', 'fennel', 'fennelseed', 'flaxseed', 'flounder', 'galangal', 'garlic', 'ginger', 'ginseng', 'goose', 'grapefruit', 'greenbeans', 'greentea', 'haddock', 'halibut', 'hardcheese', 'hazelnuts', 'herring', 'honey', 'kale', 'kiwi', 'kohlrabi', 'kumquat', 'lavender', 'lemon', 'lentils', 'lettuce', 'licoriceroot', 'limabeans', 'lime', 'lingonberry', 'mackerel', 'mandarinoranges', 'mango', 'maplesyrup', 'mint', 'miso', 'mussels', 'mustardgreens', 'natto', 'nectarines', 'nutmeg', 'oats', 'oliveoil', 'olivepaste', 'olives', 'onion', 'orange', 'orangejuice', 'oregano', 'oysters', 'papaya', 'parsley', 'parsnips', 'peach', 'peanuts', 'pears', 'peas', 'pecans', 'peppermint', 'persimmon', 'pinenuts', 'pistachios', 'plums', 'pomegranate', 'poppyseed', 'pumpkin', 'pumpkinseed', 'quinoa', 'radishes', 'raspberries', 'redgrapes', 'redwine', 'redwinevinegar', 'rosemary', 'sage', 'salmon', 'salsify', 'sardines', 'scallions', 'seacucumber', 'seaweed', 'sesameoil', 'sesameseeds', 'shallots', 'shrimpandprawn', 'soymilk', 'soysauce', 'soybeansprouts', 'spinach', 'squid', 'squidink', 'strawberries', 'stringbeans', 'sunflowerseed', 'sweetpotato', 'swordjackbean', 'tangelos', 'tangerines', 'tarragon', 'thistle', 'thyme', 'tofu', 'tomato', 'tomatosauce', 'trout', 'tuna', 'turkeydarkmeat', 'turmeric', 'turnip', 'vanillaextract', 'walnuts', 'watercress', 'wheat', 'whitewine', 'wholegrains', 'wintersquash', 'yoghurt', 'zucchini');
     }
 
-} // end class memorable_password_generator
+} // end class memorable_password
 
 // EOF
