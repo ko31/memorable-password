@@ -2,11 +2,11 @@
 
 [![Build Status](https://travis-ci.org/ko31/memorable-password.svg)](https://travis-ci.org/ko31/memorable-password)
 
-This plugin generates a powerful and memorable password. For example, animals, country names, foods etc.
+This plugin generates a memorable and strong password. For example, animals, country names, foods etc.
 
 ## Description
 
-This plugin generates a powerful and memorable password. For example, animals, country names, foods etc.
+This plugin generates a memorable and strong password. For example, animals, country names, foods etc.
 
 By default WordPress generates a very strong password. But I feel like something is just not there.
 

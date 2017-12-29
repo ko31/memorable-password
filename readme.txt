@@ -7,11 +7,11 @@ Tested up to: 4.9.1
 Stable tag: 1.0.0
 License: GPLv2 or later
 
-This plugin generates a powerful and memorable password. For example, animals, country names, foods etc.
+This plugin generates a memorable and strong password. For example, animals, country names, foods etc.
 
 == Description ==
 
-This plugin generates a powerful and memorable password. For example, animals, country names, foods etc.
+This plugin generates a memorable and strong password. For example, animals, country names, foods etc.
 
 By default WordPress generates a very strong password. But I feel like something is just not there.
 

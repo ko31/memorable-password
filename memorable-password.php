@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Memorable Password
  * Plugin URI:  https://github.com/ko31/memorable-password
- * Description: This plugin generates memorable, strong passwords.
+ * Description: This plugin generates a memorable and strong password.
  * Version:     1.0.0
  * Author:      Ko Takagi
  * Author URI:  https://go-sign.info/
@@ -218,8 +218,6 @@ class memorable_password {
         }
 
         if ( !empty( $symbol ) ) {
-//            $chars = '!@#$%^&*()';
-//            $chars .= "-_ []{}<>~`+=,.;:/?|";
             $chars = $this->get_symbol_character();
             $password = implode( substr( $chars, wp_rand( 0, strlen( $chars ) - 1 ), 1 ), $words );
         } else {
