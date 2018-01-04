@@ -49,6 +49,15 @@ class memorable_password {
     public function register()
     {
         add_action( 'plugins_loaded', array( $this, 'plugins_loaded' ) );
+        register_activation_hook( __FILE__ , array( $this, 'register_activation_hook' ) );
+    }
+
+    public function register_activation_hook()
+    {
+        $option = get_option( $this->plugin_name );
+        if ( empty( $option ) ) {
+            add_option( $this->plugin_name, $this->get_default_options() );
+        }
     }
 
     public function plugins_loaded()
@@ -266,6 +275,15 @@ class memorable_password {
         $extra_special_chars = '-_ []{}<>~`+=,.;:/?|';
 
         return $special_chars . $extra_special_chars;
+    }
+
+    public function get_default_options()
+    {
+        return array(
+            'kind' => array( 'animal', 'country', 'food' ),
+            'uppercase' => '',
+            'symbol' => '',
+        );
     }
 
     public function get_animal_words()
