@@ -82,21 +82,50 @@ class memorable_password {
             if ( check_admin_referer( 'memorable-password', 'memorable-password-nonce' ) ) {
                 global $wpdb;
                 $e = new WP_Error();
-                $kind = isset( $_POST['kind'] ) ? $_POST['kind'] : '' ;
-                $uppercase = isset( $_POST['uppercase'] ) ? $_POST['uppercase'] : '' ;
-                $symbol = isset( $_POST['symbol'] ) ? $_POST['symbol'] : '' ;
-                if ( $kind ) {
+                if ( isset( $_POST['kind'] ) && $_POST['kind'] ) {
+                    if ( !is_array( $_POST['kind'] ) ) {
+                        $e->add( 'error', esc_html__( 'Invalid kind of words', 'memorable-password' ) );
+                    } else {
+                        $kind = array();
+                        foreach ( array( 'animal', 'country', 'food' ) as $_kind ) {
+                            if ( in_array( $_kind , $_POST['kind'] ) ) {
+                                $kind[] = $_kind;
+                            }
+                        }
+                        if ( empty( $kind ) ) {
+                            $e->add( 'error', esc_html__( 'Please select at least one kind of words', 'memorable-password' ) );
+                        }
+                    }
+                } else {
+                    $e->add( 'error', esc_html__( 'Please select at least one kind of words', 'memorable-password' ) );
+                }
+                if ( isset( $_POST['uppercase'] ) && $_POST['uppercase'] ) {
+                    $uppercase = 1;
+                } else {
+                    $uppercase = '';
+                }
+                if ( isset( $_POST['uppercase'] ) && $_POST['uppercase'] ) {
+                    $uppercase = 1;
+                } else {
+                    $uppercase = '';
+                }
+                if ( isset( $_POST['symbol'] ) && $_POST['symbol'] ) {
+                    $symbol = 1;
+                } else {
+                    $symbol = '';
+                }
+
+                if ( $e->get_error_code() ) {
+                    set_transient( 'memorable-password-errors', $e->get_error_messages(), 5 );
+                } else {
                     $option = get_option( $this->plugin_name );
                     $option['kind'] = $kind;
                     $option['uppercase'] = $uppercase;
                     $option['symbol'] = $symbol;
                     update_option( $this->plugin_name, $option );
                     set_transient( 'memorable-password-updated', true, 5 );
-                } else {
-                    $e->add( 'error', esc_html__( 'Please select at least one kind of words', 'memorable-password' ) );
-                    set_transient( 'memorable-password-errors', $e->get_error_messages(), 5 );
                 }
-
+                
                 wp_redirect( 'options-general.php?page=memorable-password' );
             }
         }
@@ -126,16 +155,10 @@ class memorable_password {
 
     public function options_page()
     {
-        if ( isset($_POST['memorable-password-nonce']) && $_POST['memorable-password-nonce'] ) {
-            $kind = $_POST['kind'];
-            $uppercase = $_POST['uppercase'];
-            $symbol = $_POST['symbol'];
-        } else {
-            $option = get_option( $this->plugin_name );
-            $kind = isset( $option['kind'] ) ? $option['kind'] : array();
-            $uppercase = isset( $option['uppercase'] ) ? $option['uppercase'] : '';
-            $symbol = isset( $option['symbol'] ) ? $option['symbol'] : '';
-        }
+        $option = get_option( $this->plugin_name );
+        $kind = isset( $option['kind'] ) ? $option['kind'] : array();
+        $uppercase = isset( $option['uppercase'] ) ? $option['uppercase'] : '';
+        $symbol = isset( $option['symbol'] ) ? $option['symbol'] : '';
 ?>
 <div id="memorable-password" class="wrap">
 <h2>Memorable Password</h2>
