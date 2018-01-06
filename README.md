@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/ko31/memorable-password.svg)](https://travis-ci.org/ko31/memorable-password)
 [![](https://img.shields.io/wordpress/plugin/v/memorable-password.svg)](https://wordpress.org/plugins/memorable-password/)
 [![](https://img.shields.io/wordpress/v/memorable-password.svg)](https://wordpress.org/plugins/memorable-password/)
-
+[![](https://ps.w.org/memorable-password/assets/banner-1544x500.png)](https://wordpress.org/plugins/memorable-password/)
 
 This plugin generates a memorable and strong password. For example, animals, country names, foods etc.
 
