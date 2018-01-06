@@ -33,17 +33,27 @@ $memorablePassword->register();
 class memorable_password {
 
     private $version = '';
-    private $langs   = '';
+    private $text_domain = '';
+    private $langs = '';
+    private $plugin_slug = '';
+    private $option_name = '';
+    private $options;
 
     function __construct()
     {
         $data = get_file_data(
             __FILE__,
-            array('ver' => 'Version', 'langs' => 'Domain Path')
+            array(
+                'ver' => 'Version',
+                'langs' => 'Domain Path',
+                'text_domain' => 'Text Domain'
+            )
         );
         $this->version = $data['ver'];
-        $this->langs   = $data['langs'];
-        $this->plugin_name = 'memorable-password';
+        $this->text_domain = $data['text_domain'];
+        $this->langs = $data['langs'];
+        $this->plugin_slug = basename( dirname( __FILE__ ) );
+        $this->option_name = basename( dirname( __FILE__ ) );
     }
 
     public function register()
@@ -54,188 +64,182 @@ class memorable_password {
 
     public function register_activation_hook()
     {
-        $option = get_option( $this->plugin_name );
-        if ( empty( $option ) ) {
-            add_option( $this->plugin_name, $this->get_default_options() );
+        $options = get_option( $this->option_name );
+        if ( empty( $options ) ) {
+            add_option( $this->option_name, $this->get_default_option_value() );
         }
     }
 
     public function plugins_loaded()
     {
         load_plugin_textdomain(
-            'memorable-password',
+            $this->text_domain,
             false,
             dirname( plugin_basename( __FILE__ ) ) . $this->langs
         );
 
         add_action( 'admin_menu', array( $this, 'admin_menu' ) );
         add_action( 'admin_init', array( $this, 'admin_init' ) );
-        add_action( 'admin_notices', array( $this, 'admin_notices' ) );
+//        add_action( 'admin_notices', array( $this, 'admin_notices' ) );
         add_filter( 'random_password', array( $this, 'random_password' ), 10, 1 );
     }
 
     public function admin_menu()
     {
         add_options_page(
-            __( 'Memorable Password', 'memorable-password' ),
-            __( 'Memorable Password', 'memorable-password' ),
+            __( 'Memorable Password', $this->text_domain ),
+            __( 'Memorable Password', $this->text_domain ),
             'manage_options',
-            'memorable-password',
+            $this->plugin_slug,
             array( $this, 'options_page' )
         );
     }
 
     public function admin_init()
     {
-        if ( isset($_POST['memorable-password-nonce']) && $_POST['memorable-password-nonce'] ) {
-            if ( check_admin_referer( 'memorable-password', 'memorable-password-nonce' ) ) {
-                global $wpdb;
-                $e = new WP_Error();
-                if ( isset( $_POST['kind'] ) && $_POST['kind'] ) {
-                    if ( !is_array( $_POST['kind'] ) ) {
-                        $e->add( 'error', esc_html__( 'Invalid kind of words', 'memorable-password' ) );
-                    } else {
-                        $kind = array();
-                        foreach ( array( 'animal', 'country', 'food' ) as $_kind ) {
-                            if ( in_array( $_kind , $_POST['kind'] ) ) {
-                                $kind[] = $_kind;
-                            }
-                        }
-                        if ( empty( $kind ) ) {
-                            $e->add( 'error', esc_html__( 'Please select at least one kind of words', 'memorable-password' ) );
-                        }
-                    }
-                } else {
-                    $e->add( 'error', esc_html__( 'Please select at least one kind of words', 'memorable-password' ) );
-                }
-                if ( isset( $_POST['uppercase'] ) && $_POST['uppercase'] ) {
-                    $uppercase = 1;
-                } else {
-                    $uppercase = '';
-                }
-                if ( isset( $_POST['uppercase'] ) && $_POST['uppercase'] ) {
-                    $uppercase = 1;
-                } else {
-                    $uppercase = '';
-                }
-                if ( isset( $_POST['symbol'] ) && $_POST['symbol'] ) {
-                    $symbol = 1;
-                } else {
-                    $symbol = '';
-                }
+        register_setting(
+            $this->plugin_slug,
+            $this->option_name,
+            array( $this, 'sanitize_callback' )
+        );
 
-                if ( $e->get_error_code() ) {
-                    set_transient( 'memorable-password-errors', $e->get_error_messages(), 5 );
-                } else {
-                    $option = get_option( $this->plugin_name );
-                    $option['kind'] = $kind;
-                    $option['uppercase'] = $uppercase;
-                    $option['symbol'] = $symbol;
-                    update_option( $this->plugin_name, $option );
-                    set_transient( 'memorable-password-updated', true, 5 );
-                }
-                
-                wp_redirect( 'options-general.php?page=memorable-password' );
-            }
-        }
+        add_settings_section(
+            $this->plugin_slug,
+            __( 'Basic settings', $this->text_domain ),
+            array( $this, 'section_callback' ),
+            $this->plugin_slug
+        );
+
+        add_settings_field( 
+            'word', 
+            __( 'Word', $this->text_domain ),
+            array( $this, 'kind_callback' ),
+            $this->plugin_slug,
+            $this->plugin_slug
+        );
+
+        add_settings_field( 
+            'uppercase', 
+            __( 'Uppercase', $this->text_domain ),
+            array( $this, 'uppercase_callback' ),
+            $this->plugin_slug,
+            $this->plugin_slug
+        );
+
+        add_settings_field( 
+            'delimiter', 
+            __( 'Delimiter', $this->text_domain ),
+            array( $this, 'symbol_callback' ),
+            $this->plugin_slug,
+            $this->plugin_slug
+        );
     }
 
-    public function admin_notices()
-    {
+    public function sanitize_callback( $input ) { 
+
+        if ( !is_array( $input ) ) {
+            $input = (array)$input;
+        }
+
+        $is_selected = false;
+        foreach ( array( 'animal', 'country', 'food' ) as $_kind ) {
+            if ( isset( $input[$_kind] ) ) {
+                $is_selected = true;
+                break;
+            }
+        }
+        if ( !$is_selected ) {
+            add_settings_error( $this->plugin_slug, 'unselected_word', __( 'Please select at least one kind of words', $this->text_domain ) );
+            $options = get_option( $this->option_name );
+            foreach ( $this->get_default_kinds() as $val ) {
+                if ( isset( $options[$val] ) ) {
+                    $input[$val] = 1;
+                }
+            }
+        }
+
+        return $input;
+    }
+
+    public function section_callback() { 
+        return;
+    }
+
+    public function kind_callback() { 
+        foreach ( $this->get_default_kinds() as $val ) :
+            $check = isset( $this->options[$val] ) ? 1 : '';
 ?>
-        <?php if ( $messages = get_transient( 'memorable-password-errors' ) ): ?>
-            <div class="error">
-            <ul>
-            <?php foreach ( $messages as $message ): ?>
-                <li><?php echo esc_html( $message );?></li>
-            <?php endforeach; ?>
-            </ul>
-            </div>
-        <?php endif; ?>
-        <?php if ( $messages = get_transient( 'memorable-password-updated' ) ): ?>
-            <div class="updated">
-            <ul>
-                <li><?php esc_html_e( 'Password has been updated.', 'memorable-password' );?></li>
-            </ul>
-            </div>
-        <?php endif; ?>
+    <label for="<?php echo $val;?>"><input type="checkbox" id="<?php echo $val;?>" name="<?php echo $this->option_name;?>[<?php echo $val;?>]" <?php checked( $check, 1 ); ?> value="1" /><?php esc_html_e( ucfirst( $val ), $this->text_domain );?></label>&nbsp;
+<?php
+        endforeach;
+?>
+    <p class="description"><?php esc_html_e( 'Please select words to enable', $this->text_domain );?></p>
+<?php
+    }
+
+    public function uppercase_callback() { 
+        $check = isset( $this->options['uppercase'] ) ? 1 : '';
+?>
+    <label for="uppercase"><input type="checkbox" id="uppercase" name="<?php echo $this->option_name;?>[uppercase]" <?php checked( $check, 1 ); ?> value="1" /><?php esc_html_e( 'Include Uppercase characters', $this->text_domain );?></label>
+<?php
+    }
+
+    public function symbol_callback() { 
+        $check = isset( $this->options['symbol'] ) ? 1 : '';
+?>
+    <label for="symbol"><input type="checkbox" id="symbol" name="<?php echo $this->option_name;?>[symbol]" <?php checked( $check, 1 ); ?> value="1" /><?php esc_html_e( 'Use special symbols for delimiter', $this->text_domain );?></label>
 <?php
     }
 
     public function options_page()
     {
-        $option = get_option( $this->plugin_name );
-        $kind = isset( $option['kind'] ) ? $option['kind'] : array();
-        $uppercase = isset( $option['uppercase'] ) ? $option['uppercase'] : '';
-        $symbol = isset( $option['symbol'] ) ? $option['symbol'] : '';
+        $this->options = get_option( $this->option_name );
 ?>
-<div id="memorable-password" class="wrap">
-<h2>Memorable Password</h2>
-
-<form method="post" action="<?php echo esc_attr($_SERVER['REQUEST_URI']); ?>">
-<?php wp_nonce_field( 'memorable-password', 'memorable-password-nonce' ); ?>
-
-<table class="form-table">
-<tbody>
-<tr>
-<th scope="row"><label for="kind"><?php esc_html_e( 'Kind of words', 'memorable-password' );?></label></th>
-<td>
-<fieldset>
-<legend class="screen-reader-text"><span><?php esc_html_e( 'Kind of words', 'memorable-password' );?></span></legend>
-<label for="kind_animal"><input name="kind[]" type="checkbox" id="kind_animal" value="animal" <?php if ( in_array( 'animal' , $kind ) ) { echo "checked";} ?>/><?php esc_html_e( 'Animal', 'memorable-password' );?></label>&nbsp;
-<label for="kind_country"><input name="kind[]" type="checkbox" id="kind_country" value="country" <?php if ( in_array( 'country' , $kind ) ) { echo "checked";} ?>/><?php esc_html_e( 'country', 'memorable-password' );?></label>&nbsp;
-<label for="kind_food"><input name="kind[]" type="checkbox" id="kind_food" value="food" <?php if ( in_array( 'food' , $kind ) ) { echo "checked";} ?>/><?php esc_html_e( 'food', 'memorable-password' );?></label>&nbsp;
-</fieldset>
-</td>
-</tr>
-<tr>
-<th scope="row"><label for="uppercase"><?php esc_html_e( 'Uppercase', 'memorable-password' );?></label></th>
-<td>
-<fieldset>
-<legend class="screen-reader-text"><span><?php esc_html_e( 'Uppercase', 'memorable-password' );?></span></legend>
-<label for="include_uppercase"><input name="uppercase" type="checkbox" id="include_uppercase" value="1" <?php if ( $uppercase ) { echo "checked";} ?>/><?php esc_html_e( 'Include Uppercase characters', 'memorable-password' );?></label>&nbsp;
-</fieldset>
-</td>
-</tr>
-<tr>
-<th scope="row"><label for="delimiter"><?php esc_html_e( 'Delimiter', 'memorable-password' );?></label></th>
-<td>
-<fieldset>
-<legend class="screen-reader-text"><span><?php esc_html_e( 'Delimiter', 'memorable-password' );?></span></legend>
-<label for="symbol"><input name="symbol" type="checkbox" id="symbol" value="1" <?php if ( $symbol ) { echo "checked";} ?>/><?php esc_html_e( 'Use special symbols for delimiter', 'memorable-password' );?></label>&nbsp;
-</fieldset>
-</td>
-</tr>
-</tbody>
-</table>
-
-<p class="submit">
-<input type="submit" name="submit" id="submit" class="button button-primary" value="<?php esc_html_e( 'Update', 'memorable-password' );?>">
-</p>
-</form>
-</div><!-- #memorable-password -->
+    <form action='options.php' method='post'>
+        <h1><?php echo __( 'Memorable Password', $this->text_domain );?></h1>
 <?php
+        settings_fields( $this->plugin_slug );
+        do_settings_sections( $this->plugin_slug );
+        submit_button();
+?>
+    </form>
+<?php
+    }
+
+    public function get_default_kinds()
+    {
+        return array(
+            'animal',
+            'country',
+            'food'
+        );
+    }
+
+    public function get_default_option_value()
+    {
+        $options = array();
+        foreach ( $this->get_default_kinds() as $val ) {
+            $options[$val] = 1;
+        }
+        return $options;
     }
 
     public function random_password( $password )
     {
-        $option = get_option( $this->plugin_name );
-        $kind = isset( $option['kind'] ) ? $option['kind'] : array();
-        $uppercase = isset( $option['uppercase'] ) ? $option['uppercase'] : '';
-        $symbol = isset( $option['symbol'] ) ? $option['symbol'] : '';
+        $options = get_option( $this->plugin_slug );
 
         $words = array();
-        if ( in_array( 'animal' , $kind ) ) {
+        if ( isset( $options['animal'] ) ) {
             $animals = $this->get_animal_words();
-            $words[] = $animals[mt_rand( 0, count( $animals ) )];
+            $words[] = $animals[mt_rand( 0, count( $animals ) - 1 )];
         }
-        if ( in_array( 'country' , $kind ) ) {
+        if ( isset( $options['country'] ) ) {
             $countries = $this->get_country_words();
-            $words[] = $countries[mt_rand( 0, count( $countries ) )];
+            $words[] = $countries[mt_rand( 0, count( $countries ) - 1 )];
         }
-        if ( in_array( 'food' , $kind ) ) {
+        if ( isset( $options['food'] ) ) {
             $foods = $this->get_food_words();
-            $words[] = $foods[mt_rand( 0, count( $foods ) )];
+            $words[] = $foods[mt_rand( 0, count( $foods ) - 1 )];
         }
         if ( empty( $words ) ) {
             return $password;
@@ -243,13 +247,13 @@ class memorable_password {
 
         shuffle( $words );
 
-        if ( !empty( $uppercase ) ) {
+        if ( isset( $options['uppercase'] ) ) {
             foreach ( $words as $k => $v ) {
                 $words[$k] = $this->uppercase_one_letter( $v );
             }
         }
 
-        if ( !empty( $symbol ) ) {
+        if ( isset( $options['symbol'] ) ) {
             $chars = $this->get_symbol_character();
             $password = implode( substr( $chars, wp_rand( 0, strlen( $chars ) - 1 ), 1 ), $words );
         } else {
@@ -275,15 +279,6 @@ class memorable_password {
         $extra_special_chars = '-_ []{}<>~`+=,.;:/?|';
 
         return $special_chars . $extra_special_chars;
-    }
-
-    public function get_default_options()
-    {
-        return array(
-            'kind' => array( 'animal', 'country', 'food' ),
-            'uppercase' => '',
-            'symbol' => '',
-        );
     }
 
     public function get_animal_words()

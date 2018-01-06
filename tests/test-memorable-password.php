@@ -25,9 +25,7 @@ class MemorablePasswordTest extends WP_UnitTestCase {
 
     function test_kind_is_animal() {
         $option = array(
-            'kind' => array( 'animal' ),
-            'uppercase' => false,
-            'symbol' => false,
+            'animal' => 1
         );
         update_option( $this->plugin_name, $option );
 
@@ -40,9 +38,7 @@ class MemorablePasswordTest extends WP_UnitTestCase {
 
     function test_kind_is_country() {
         $option = array(
-            'kind' => array( 'country' ),
-            'uppercase' => false,
-            'symbol' => false,
+            'country' => 1
         );
         update_option( $this->plugin_name, $option );
 
@@ -55,9 +51,7 @@ class MemorablePasswordTest extends WP_UnitTestCase {
 
     function test_kind_is_food() {
         $option = array(
-            'kind' => array( 'food' ),
-            'uppercase' => false,
-            'symbol' => false,
+            'food' => 1
         );
         update_option( $this->plugin_name, $option );
 
@@ -70,9 +64,9 @@ class MemorablePasswordTest extends WP_UnitTestCase {
 
     function test_kind_is_all() {
         $option = array(
-            'kind' => array( 'animal', 'country', 'food' ),
-            'uppercase' => false,
-            'symbol' => false,
+            'animal' => 1,
+            'country' => 1,
+            'food' => 1
         );
         update_option( $this->plugin_name, $option );
 
@@ -104,9 +98,8 @@ class MemorablePasswordTest extends WP_UnitTestCase {
 
     function test_uppercase_is_enabled() {
         $option = array(
-            'kind' => array( 'animal' ),
-            'uppercase' => true,
-            'symbol' => false,
+            'animal' => 1,
+            'uppercase' => 1
         );
         update_option( $this->plugin_name, $option );
 
@@ -120,9 +113,9 @@ class MemorablePasswordTest extends WP_UnitTestCase {
 
     function test_symbol_is_enabled() {
         $option = array(
-            'kind' => array( 'animal', 'country' ),
-            'uppercase' => false,
-            'symbol' => true,
+            'animal' => 1,
+            'country' => 1,
+            'symbol' => 1
         );
         update_option( $this->plugin_name, $option );
 
