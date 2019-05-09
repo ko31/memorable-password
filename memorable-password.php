@@ -3,7 +3,7 @@
  * Plugin Name: Memorable Password
  * Plugin URI:  https://github.com/ko31/memorable-password
  * Description: This plugin generates a memorable and strong password.
- * Version:     1.0.0
+ * Version:     1.0.1
  * Author:      Ko Takagi
  * Author URI:  https://go-sign.info/
  * License:     GPLv2

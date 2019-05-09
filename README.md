@@ -23,8 +23,10 @@ This is a spice of password.
 
 ## Changelog
 
+### 1.0.1
+
+* Version increment
+
 ### 1.0.0
 
 * Initial Release
-
-
