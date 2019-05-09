@@ -80,7 +80,6 @@ class memorable_password {
 
         add_action( 'admin_menu', array( $this, 'admin_menu' ) );
         add_action( 'admin_init', array( $this, 'admin_init' ) );
-//        add_action( 'admin_notices', array( $this, 'admin_notices' ) );
         add_filter( 'random_password', array( $this, 'random_password' ), 10, 1 );
     }
 
