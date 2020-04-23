@@ -33,6 +33,9 @@ matrix:
       env: WP_VERSION=latest
       dist: precise
 
+services:
+  - mysql
+
 before_script:
   - export PATH="$HOME/.composer/vendor/bin:$PATH"
   - |
